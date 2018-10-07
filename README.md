@@ -1,4 +1,4 @@
-# ce_tune
+# ce-tune
 tune ml model's superparameters
 
 ```
