@@ -1,5 +1,4 @@
-import pandas as pd
-from cv_util import *
+from cetune.cv_util import *
 
 
 def screen_feature(df, var_threshold=.01, corr_threshold=.85, detail=False):
