@@ -1,7 +1,7 @@
 from scipy.special import boxcox1p
 from sklearn.linear_model import LinearRegression
 
-from cv_util import *
+from cetune.cv_util import *
 
 
 def calc_best_transform_linear(x, y, lmds, min_x=None, measure_func=metrics.mean_squared_error,
