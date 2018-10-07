@@ -1,5 +1,6 @@
 import gc
 import threading
+from collections import Counter
 
 import pandas as pd
 from sklearn import metrics
@@ -83,16 +84,16 @@ def stratified_kfold(data, n_splits=3, shuffle=True, random_state=0):
 def group_kfold(data, n_splits=3, shuffle=True, random_state=0):
     x, y, selector = data[0], data[1], data[2]
     col = selector[data[3]].reset_index(drop=True) if len(data) > 3 else pd.Series(selector)
-    cnt = col.value_counts()
+    cnt = sorted(Counter(col).items(), key=lambda pair: (pair[1], pair[0]))
 
-    part_size = cnt.shape[0] // 3
-    s1 = cnt.iloc[: part_size].index.values
+    part_size = len(cnt) // 3
+    s1 = np.array([k for k, v in cnt[: part_size]])
     part1 = [(col.loc[col.isin(s1[tind])].index, col.loc[col.isin(s1[vind])].index) for tind, vind in
              KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state).split(s1)]
-    s2 = cnt.iloc[part_size: part_size * 2].index.values
+    s2 = np.array([k for k, v in cnt[part_size: part_size * 2]])
     part2 = [(col.loc[col.isin(s2[tind])].index, col.loc[col.isin(s2[vind])].index) for tind, vind in
              KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state).split(s2)]
-    s3 = cnt.iloc[part_size * 2:].index.values
+    s3 = np.array([k for k, v in cnt[part_size * 2:]])
     part3 = [(col.loc[col.isin(s3[tind])].index, col.loc[col.isin(s3[vind])].index) for tind, vind in
              KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state).split(s3)]
 
