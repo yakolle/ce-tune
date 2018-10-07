@@ -6,5 +6,5 @@ setup(name='ce_tune',
       url='http://github.com/yakolle/ce_tune',
       author='Yakolle Zhang',
       license='MIT',
-      packages=['ce_tune'],
+      packages=['cetune'],
       zip_safe=False)      
