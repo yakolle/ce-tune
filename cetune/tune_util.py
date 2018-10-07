@@ -1,11 +1,11 @@
-from cv_util import *
+from cetune.cv_util import *
 
 
 def tune(model, data, init_param, param_dic, measure_func=metrics.accuracy_score, cv_repeat_times=1, data_dir=None,
          balance_mode=None, max_optimization=True, mean_std_coeff=(1.0, 1.0), score_min_gain=1e-4, fit_params=None,
          random_state=0, detail=True, kc=None, inlier_indices=None, holdout_data=None, nthread=1, kfold_func=kfold,
          factor_cache=None, warm_probe=False, task_id=None, cv_scores=None, best_steady_trade_off=0, save_model=False,
-         non_ordinal_factors=None):
+         non_ordinal_factors=None, end_time=None):
     def get_next_param(learning_model, train_data, param_key, param_val, inlier_ids, h_data):
         param = {param_key: param_val}
         learning_model.set_params(**param)
@@ -23,14 +23,15 @@ def tune(model, data, init_param, param_dic, measure_func=metrics.accuracy_score
                        holdout_data=holdout_data, fit_params=fit_params, kc=kc, kfold_func=kfold_func,
                        factor_cache=factor_cache, warm_probe=warm_probe, task_id=task_id, cv_scores=cv_scores,
                        best_steady_trade_off=best_steady_trade_off, save_model=save_model,
-                       non_ordinal_factors=non_ordinal_factors)
+                       non_ordinal_factors=non_ordinal_factors, end_time=end_time)
 
 
 def tune_factor(model, data, init_factor, factor_dic, get_next_elements, update_factors, cv_repeat_times=1, kc=None,
                 measure_func=metrics.accuracy_score, balance_mode=None, max_optimization=True, score_min_gain=1e-4,
                 mean_std_coeff=(1.0, 1.0), data_dir=None, random_state=0, detail=True, inlier_indices=None,
                 holdout_data=None, nthread=1, fit_params=None, kfold_func=kfold, factor_cache=None, warm_probe=False,
-                task_id=None, cv_scores=None, best_steady_trade_off=0, save_model=False, non_ordinal_factors=None):
+                task_id=None, cv_scores=None, best_steady_trade_off=0, save_model=False, non_ordinal_factors=None,
+                end_time=None):
     def rebuild_factor_dic():
         for fk, fv in best_factors:
             if non_ordinal_factors is None or (non_ordinal_factors is not None and fk not in non_ordinal_factors):
@@ -96,7 +97,7 @@ def tune_factor(model, data, init_factor, factor_dic, get_next_elements, update_
                            'mean_std_coeff': mean_std_coeff, 'score_min_gain': score_min_gain, 'data_dir': data_dir,
                            'holdout_data': holdout_data, 'balance_mode': balance_mode, 'nthread': nthread,
                            'fit_params': fit_params, 'kfold_func': kfold_func, 'factor_cache': factor_cache,
-                           'task_id': task_id, 'cv_scores': cv_scores, 'save_model': save_model}
+                           'task_id': task_id, 'cv_scores': cv_scores, 'save_model': save_model, 'end_time': end_time}
 
     init_factor_dic = backup(factor_dic)
     best_factors = init_factor
