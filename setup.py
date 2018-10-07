@@ -1,6 +1,6 @@
 from setuptools import setup
 
-setup(name='ce_tune',
+setup(name='cetune',
       version='0.1',
       description="Tune the ml model's superparameters",
       url='http://github.com/yakolle/ce_tune',
