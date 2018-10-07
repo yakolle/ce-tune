@@ -5,12 +5,15 @@ import pandas as pd
 from sklearn import metrics
 from sklearn.model_selection import KFold, StratifiedKFold
 
-from data_util import *
-from util import *
+from cetune.data_util import *
+from cetune.util import *
 
 
 def _cv_trainer(learning_model, data, cv_set_iter, measure_func, cv_scores, inlier_indices, balance_mode, lock=None,
-                fit_params=None, data_dir=None, task_id=None, model_id=None, detail=False):
+                fit_params=None, data_dir=None, task_id=None, model_id=None, detail=False, end_time=None):
+    if end_time is not None and int(time.time()) > end_time:
+        exit(0)
+
     x, y = data[0], data[1]
     need_selector = is_in_function_params(measure_func, 'selector')
     local_cv_scores = []
@@ -100,7 +103,7 @@ def group_kfold(data, n_splits=3, shuffle=True, random_state=0):
 def bootstrap_k_fold_cv_train(learning_model, data, kfold_func=kfold, statistical_size=30, repeat_times=1, refit=False,
                               random_state=0, measure_func=metrics.accuracy_score, balance_mode=None, kc=None,
                               inlier_indices=None, holdout_data=None, nthread=1, fit_params=None, data_dir=None,
-                              task_id=None, cv_scores=None, model_id=None):
+                              task_id=None, cv_scores=None, model_id=None, end_time=None):
     x, y = data[0], data[1]
     if kc is not None:
         k = kc[0]
@@ -128,7 +131,8 @@ def bootstrap_k_fold_cv_train(learning_model, data, kfold_func=kfold, statistica
 
             model_name = f'{model_id}_{c0}_{k0}' if model_id is not None else None
             _cv_trainer(learning_model, data, cv_set, measure_func, cur_cv_scores, inlier_indices, balance_mode,
-                        fit_params=fit_params, data_dir=data_dir, task_id=task_id, model_id=model_name)
+                        fit_params=fit_params, data_dir=data_dir, task_id=task_id, model_id=model_name,
+                        end_time=end_time)
     else:
         learning_model = backup(learning_model)
         if hasattr(learning_model, 'warm_start'):
@@ -150,7 +154,7 @@ def bootstrap_k_fold_cv_train(learning_model, data, kfold_func=kfold, statistica
                 if cv_set_part:
                     t = threading.Thread(target=_cv_trainer, args=(
                         learning_model, data, cv_set_part, measure_func, cur_cv_scores, inlier_indices, balance_mode,
-                        lock, fit_params, data_dir, task_id, model_name))
+                        lock, fit_params, data_dir, task_id, model_name, False, end_time))
                     tasks.append(t)
             for t in tasks:
                 t.start()
@@ -210,7 +214,8 @@ def bootstrap_k_fold_cv_factor(learning_model, data, factor_key, factor_values, 
                                kfold_func=kfold, cv_repeat_times=1, random_state=0, measure_func=metrics.accuracy_score,
                                nthread=1, balance_mode=None, data_dir=None, kc=None, mean_std_coeff=(1.0, 1.0),
                                detail=False, max_optimization=True, inlier_indices=None, holdout_data=None,
-                               save_model=False, fit_params=None, factor_cache=None, task_id=None, cv_scores=None):
+                               save_model=False, fit_params=None, factor_cache=None, task_id=None, cv_scores=None,
+                               end_time=None):
     if data_dir is not None or factor_cache is not None:
         score_cache = read_cache(learning_model, factor_key, factor_table, data_dir=data_dir, factor_cache=factor_cache,
                                  task_id=task_id)
@@ -237,7 +242,7 @@ def bootstrap_k_fold_cv_factor(learning_model, data, factor_key, factor_values, 
                     learning_model, data, kfold_func=kfold_func, repeat_times=cv_repeat_times,
                     random_state=random_state, measure_func=measure_func, balance_mode=balance_mode, kc=kc,
                     holdout_data=holdout_data, inlier_indices=inlier_indices, nthread=nthread, fit_params=fit_params,
-                    data_dir=data_dir, task_id=task_id, cv_scores=cv_scores, model_id=model_id)
+                    data_dir=data_dir, task_id=task_id, cv_scores=cv_scores, model_id=model_id, end_time=end_time)
 
                 if holdout_data is not None:
                     cur_cv_scores, holdout_scores = cur_cv_scores
@@ -406,7 +411,8 @@ def probe_best_factor(learning_model, data, factor_key, factor_values, get_next_
                       kfold_func=kfold, detail=False, cv_repeat_times=1, kc=None, score_min_gain=1e-4,
                       measure_func=metrics.accuracy_score, balance_mode=None, random_state=0, mean_std_coeff=(1.0, 1.0),
                       max_optimization=True, nthread=1, data_dir=None, inlier_indices=None, holdout_data=None,
-                      fit_params=None, factor_cache=None, task_id=None, cv_scores=None, save_model=False):
+                      fit_params=None, factor_cache=None, task_id=None, cv_scores=None, save_model=False,
+                      end_time=None):
     int_flag = all([isinstance(ele, int) for ele in factor_values])
     large_num = 1e10
     bad_score = -large_num if max_optimization else large_num
@@ -436,7 +442,7 @@ def probe_best_factor(learning_model, data, factor_key, factor_values, get_next_
                         learning_model, data, kfold_func=kfold_func, repeat_times=cv_repeat_times, nthread=nthread,
                         random_state=random_state, measure_func=measure_func, balance_mode=balance_mode, kc=kc,
                         holdout_data=holdout_data, inlier_indices=inlier_indices, fit_params=fit_params,
-                        data_dir=data_dir, task_id=task_id, cv_scores=cv_scores, model_id=model_id)
+                        data_dir=data_dir, task_id=task_id, cv_scores=cv_scores, model_id=model_id, end_time=end_time)
 
                     if holdout_data is not None:
                         cur_cv_scores, holdout_scores = cur_cv_scores
