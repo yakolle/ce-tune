@@ -12,8 +12,8 @@ from cetune.util import *
 
 def _cv_trainer(learning_model, data, cv_set_iter, measure_func, cv_scores, inlier_indices, balance_mode, lock=None,
                 fit_params=None, data_dir=None, task_id=None, model_id=None, detail=False, end_time=None):
-    if end_time is not None and int(time.time()) > end_time:
-        exit(0)
+    last_time = int(time.time())
+    spend_times = []
 
     x, y = data[0], data[1]
     need_selector = is_in_function_params(measure_func, 'selector')
@@ -62,6 +62,12 @@ def _cv_trainer(learning_model, data, cv_set_iter, measure_func, cv_scores, inli
                 cache_cv_score(cv_score, data_dir, task_id)
         local_cv_scores.append(cv_score)
         i += 1
+
+        cur_time = int(time.time())
+        spend_times.append(cur_time - last_time)
+        if cur_time + 2 * np.max(spend_times) - np.min(spend_times) > end_time:
+            exit(0)
+        last_time = cur_time
 
     if lock is None:
         cv_scores += local_cv_scores
