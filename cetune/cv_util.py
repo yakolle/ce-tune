@@ -239,6 +239,7 @@ def bootstrap_k_fold_cv_factor(learning_model, data, factor_key, factor_values, 
     last_best_factor_score = bad_score
     last_best_factor_score_pair = None
     for factor_val in factor_values:
+        need_flush = len(cv_scores) > 0
         if factor_val not in score_cache:
             try:
                 model_id = f'{factor_key}_{factor_val}' if save_model else None
@@ -290,7 +291,7 @@ def bootstrap_k_fold_cv_factor(learning_model, data, factor_key, factor_values, 
 
         if data_dir is not None or factor_cache is not None:
             cur_time = int(time.time())
-            if cur_time - last_time >= 300:
+            if cur_time - last_time >= 300 or need_flush:
                 last_time = cur_time
                 write_cache(learning_model, factor_key, score_cache, factor_table, data_dir=data_dir,
                             factor_cache=factor_cache, task_id=task_id)
