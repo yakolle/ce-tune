@@ -68,7 +68,7 @@ def tune_factor(model, data, init_factor, factor_dic, get_next_elements, update_
             _model, _data, repeat_times=cv_repeat_times, random_state=seed_dict[cur_factor_key],
             measure_func=measure_func, balance_mode=balance_mode, kc=kc, holdout_data=_holdout_data,
             inlier_indices=_inlier_indices, nthread=nthread, fit_params=fit_params, kfold_func=kfold_func,
-            data_dir=data_dir, task_id=task_id)
+            data_dir=data_dir, task_id=task_id, end_time=end_time)
         if holdout_data is not None:
             cur_cv_scores, holdout_scores = cur_cv_scores
         cv_score_mean = np.mean(cur_cv_scores)
