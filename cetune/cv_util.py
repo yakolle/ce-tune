@@ -65,7 +65,7 @@ def _cv_trainer(learning_model, data, cv_set_iter, measure_func, cv_scores, inli
 
         cur_time = int(time.time())
         spend_times.append(cur_time - last_time)
-        if cur_time + 2 * np.max(spend_times) - np.min(spend_times) > end_time:
+        if end_time is not None and cur_time + 2 * np.max(spend_times) - np.min(spend_times) > end_time:
             exit(0)
         last_time = cur_time
 
