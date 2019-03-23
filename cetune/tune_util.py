@@ -59,20 +59,11 @@ def tune_factor(model, data, init_factor, factor_dic, get_next_elements, update_
                         new_fvs.append(fvs[idx + 2])
                     factor_dic[fk] = new_fvs
 
-    def get_last_best_score(_model, _data, _last_best_factors, _inlier_indices, _holdout_data, _cv_scores):
-        for fk, fv in _last_best_factors:
-            _model, _data, _inlier_indices, _holdout_data = get_next_elements(_model, _data, fk, fv, _inlier_indices,
-                                                                              _holdout_data)
-
-        cur_cv_scores = bootstrap_k_fold_cv_train(
-            _model, _data, repeat_times=cv_repeat_times, random_state=seed_dict[cur_factor_key],
-            measure_func=measure_func, balance_mode=balance_mode, kc=kc, holdout_data=_holdout_data,
-            inlier_indices=_inlier_indices, nthread=nthread, fit_params=fit_params, kfold_func=kfold_func,
-            data_dir=data_dir, task_id=task_id, end_time=end_time, cv_scores=_cv_scores)
-        if holdout_data is not None:
-            cur_cv_scores, holdout_scores = cur_cv_scores
-        cv_score_mean = np.mean(cur_cv_scores)
-        cv_score_std = np.std(cur_cv_scores)
+    def get_last_best_score(_model, _data, _last_best_factors):
+        _extra_factor_dic = get_valid_function_parameters(get_cur_cv_score, optional_factor_dic)
+        cv_score_mean, cv_score_std = get_cur_cv_score(
+            _model, _data, _last_best_factors, cur_factor_key, get_next_elements, dict(best_factors),
+            random_state=seed_dict[cur_factor_key], **_extra_factor_dic)
 
         if detail:
             print(f'score of last best factors: mean={cv_score_mean}, std={cv_score_std}')
@@ -158,7 +149,7 @@ def tune_factor(model, data, init_factor, factor_dic, get_next_elements, update_
                 cur_factor_key = factor_key
         print(best_factors)
 
-        last_best_score = get_last_best_score(model, data, last_best_factors, inlier_indices, holdout_data, cv_scores)
+        last_best_score = get_last_best_score(model, data, last_best_factors)
         if (1.0 if max_optimization else -1.0) * (cur_best_score - last_best_score) < score_min_gain \
                 or last_best_factors == best_factors:
             print(f'score of final best factors: mean={best_score_pair[0]}, std={best_score_pair[1]}')
