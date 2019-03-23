@@ -217,6 +217,78 @@ def bootstrap_k_fold_cv_train(learning_model, data, kfold_func=kfold, statistica
     return res
 
 
+def get_cur_cv_score(model, data, facotrs, factor_key, get_next_elements, factor_table, kfold_func=kfold,
+                     cv_repeat_times=1, random_state=0, measure_func=metrics.accuracy_score, nthread=1,
+                     balance_mode=None, data_dir=None, kc=None, detail=False, max_optimization=True,
+                     inlier_indices=None, holdout_data=None, save_model=False, fit_params=None, factor_cache=None,
+                     task_id=None, cv_scores=None, end_time=None):
+    if data_dir is not None or factor_cache is not None:
+        score_cache = read_cache(model, factor_key, factor_table, data_dir=data_dir, factor_cache=factor_cache,
+                                 task_id=task_id)
+    else:
+        score_cache = {}
+
+    large_num = 1e10
+    bad_score = -large_num if max_optimization else large_num
+
+    factor_val = None
+    for fk, fv in facotrs:
+        model, data, inlier_indices, holdout_data = get_next_elements(model, data, fk, fv, inlier_indices, holdout_data)
+        if fk == factor_key:
+            factor_val = factor_key
+
+    need_flush = False
+    if factor_val not in score_cache:
+        try:
+            need_flush = True
+            model_id = f'{factor_key}_{factor_val}' if save_model else None
+            cur_cv_scores = bootstrap_k_fold_cv_train(
+                model, data, kfold_func=kfold_func, repeat_times=cv_repeat_times, random_state=random_state,
+                measure_func=measure_func, balance_mode=balance_mode, kc=kc, holdout_data=holdout_data,
+                inlier_indices=inlier_indices, nthread=nthread, fit_params=fit_params, data_dir=data_dir,
+                task_id=task_id, cv_scores=cv_scores, model_id=model_id, end_time=end_time)
+
+            if holdout_data is not None:
+                cur_cv_scores, holdout_scores = cur_cv_scores
+                cv_score_mean = np.mean(cur_cv_scores)
+                cv_score_std = np.std(cur_cv_scores)
+                score_cache[factor_val] = cv_score_mean, cv_score_std, holdout_scores
+            else:
+                cv_score_mean = np.mean(cur_cv_scores)
+                cv_score_std = np.std(cur_cv_scores)
+                score_cache[factor_val] = cv_score_mean, cv_score_std
+        except Exception as e:
+            cv_score_mean = bad_score
+            cv_score_std = large_num / 10
+
+            print(e)
+    else:
+        cache_val = score_cache[factor_val]
+        if 3 == len(cache_val):
+            cv_score_mean, cv_score_std, holdout_scores = cache_val
+        else:
+            cv_score_mean, cv_score_std = cache_val
+
+    if detail:
+        if 'holdout_scores' in dir():
+            print('----------------', factor_key, '=', factor_val, ', cv_mean=', cv_score_mean, ', cv_std=',
+                  cv_score_std, ', holdout_mean=', np.mean(holdout_scores), ', holdout_std=', np.std(holdout_scores),
+                  holdout_scores, '---------------')
+        else:
+            print('----------------', factor_key, '=', factor_val, ', mean=', cv_score_mean, ', std=', cv_score_std,
+                  '---------------')
+
+    if need_flush and (data_dir is not None or factor_cache is not None):
+        write_cache(model, factor_key, score_cache, factor_table, data_dir=data_dir, factor_cache=factor_cache,
+                    task_id=task_id)
+        if factor_cache is not None:
+            print(factor_cache)
+        else:
+            print(get_time_stamp())
+
+    return cv_score_mean, cv_score_std
+
+
 def bootstrap_k_fold_cv_factor(learning_model, data, factor_key, factor_values, get_next_elements, factor_table,
                                kfold_func=kfold, cv_repeat_times=1, random_state=0, measure_func=metrics.accuracy_score,
                                nthread=1, balance_mode=None, data_dir=None, kc=None, mean_std_coeff=(1.0, 1.0),
@@ -291,7 +363,7 @@ def bootstrap_k_fold_cv_factor(learning_model, data, factor_key, factor_values, 
 
         if data_dir is not None or factor_cache is not None:
             cur_time = int(time.time())
-            if cur_time - last_time >= 300 or need_flush:
+            if cur_time - last_time >= 300 or (need_flush and not cv_scores):
                 last_time = cur_time
                 write_cache(learning_model, factor_key, score_cache, factor_table, data_dir=data_dir,
                             factor_cache=factor_cache, task_id=task_id)
@@ -492,7 +564,7 @@ def probe_best_factor(learning_model, data, factor_key, factor_values, get_next_
 
             if data_dir is not None or factor_cache is not None:
                 cur_time = int(time.time())
-                if cur_time - last_time >= 300 or need_flush:
+                if cur_time - last_time >= 300 or (need_flush and not cv_scores):
                     last_time = cur_time
                     write_cache(learning_model, factor_key, score_cache, factor_table, data_dir=data_dir,
                                 factor_cache=factor_cache, task_id=task_id)
