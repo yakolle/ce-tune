@@ -1,6 +1,40 @@
 from cetune.cv_util import *
 
 
+def avg_tune(avg_metric_func, y, ps, weights, delta_weight=0.01, min_gain=0., max_pace=-1, non_negative=True,
+             max_optimization=False, detail=True):
+    p_len = len(weights)
+    weights = weights.copy()
+
+    last_score = last_best_score = avg_metric_func(y, ps, weights)
+    cur_gain = last_score
+    while cur_gain > min_gain:
+        for i in range(p_len):
+            cur_pace = 0
+            for direction in [1, -1]:
+                while cur_pace < max_pace or max_pace <= 0:
+                    w = weights[i] + direction * delta_weight
+                    if non_negative and w < 0:
+                        break
+                    else:
+                        weights[i] = w
+
+                    cur_score = avg_metric_func(y, ps, weights)
+                    if (cur_score - last_score) * (1.0 if max_optimization else -1.0) <= 0:
+                        weights[i] -= direction * delta_weight
+                        break
+                    last_score = cur_score
+                    cur_pace += 1
+        cur_gain = (last_score - last_best_score) * (1.0 if max_optimization else -1.0)
+
+        if detail:
+            print(f'last_best_score={last_best_score}, cur_best_score={last_score}, cur_gain={cur_gain}')
+
+        last_best_score = last_score
+
+    return weights
+
+
 def tune(model, data, init_param, param_dic, measure_func=metrics.accuracy_score, cv_repeat_times=1, data_dir=None,
          balance_mode=None, max_optimization=True, mean_std_coeff=(1.0, 1.0), score_min_gain=1e-4, fit_params=None,
          random_state=0, detail=True, kc=None, inlier_indices=None, holdout_data=None, nthread=1, kfold_func=kfold,
