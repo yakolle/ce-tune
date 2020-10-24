@@ -311,7 +311,7 @@ def bootstrap_k_fold_cv_factor(learning_model, data, factor_key, factor_values, 
     last_best_factor_score = bad_score
     last_best_factor_score_pair = None
     for factor_val in factor_values:
-        need_flush = len(cv_scores) > 0
+        need_flush = not cv_scores
         if factor_val not in score_cache:
             try:
                 model_id = f'{factor_key}_{factor_val}' if save_model else None
@@ -512,7 +512,7 @@ def probe_best_factor(learning_model, data, factor_key, factor_values, get_next_
         cv_score_means = []
         cv_score_stds = []
         for factor_val in factor_values:
-            need_flush = len(cv_scores) > 0
+            need_flush = not cv_scores
             if factor_val not in score_cache:
                 try:
                     model_id = f'{factor_key}_{round_float_str(str(factor_val))}' if save_model else None
