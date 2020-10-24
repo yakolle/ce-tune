@@ -9,9 +9,9 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
+import joblib
 import numpy as np
 from pandas import Series
-from sklearn.externals import joblib
 
 
 @contextmanager
@@ -52,10 +52,16 @@ def get_valid_function_parameters(func, param_dic):
     return valid_param_dic
 
 
-def find_file(root_dir, file_pattern):
+def find_file(root_dir, file_pattern, node_types='f'):
     result = []
     for root, dirs, files in os.walk(root_dir):
-        for name in files:
+        nodes = []
+        if 'f' in node_types:
+            nodes += files
+        if 'd' in node_types:
+            nodes += dirs
+
+        for name in nodes:
             if fnmatch.fnmatch(name, file_pattern):
                 result.append(os.path.join(root, name))
     return result
@@ -106,12 +112,12 @@ def batch_predict(model, df, batch_num=1, data_dir=None):
     return p
 
 
-def arange(start, end, step):
+def arange(start, end, step, ndigits=10):
     arr = []
-    ele = start
+    ele = round(start, ndigits)
     while ele < end:
-        arr.append(round(ele, 10))
-        ele += step
+        arr.append(ele)
+        ele = round(ele + step, ndigits)
     return arr
 
 
