@@ -81,10 +81,10 @@ def tune_factor(model, data, init_factor, factor_dic, get_next_elements, update_
                         if idx - 1 >= 0:
                             new_fvs.append(fvs[idx - 1])
                     else:
-                        new_fvs.append('grid')
-                        if idx - 2 >= 0 and fvs[idx - 2] != 'grid':
+                        new_fvs.append('abc123')
+                        if idx - 2 >= 0 and fvs[idx - 2] != 'abc123':
                             new_fvs.append(fvs[idx - 2])
-                        if idx - 1 >= 0 and fvs[idx - 1] != 'grid':
+                        if idx - 1 >= 0 and fvs[idx - 1] != 'abc123':
                             new_fvs.append(fvs[idx - 1])
                     new_fvs.append(fv)
                     if idx + 1 < fvs_size:
@@ -161,8 +161,8 @@ def tune_factor(model, data, init_factor, factor_dic, get_next_elements, update_
                 else:
                     extra_factor_dic = get_valid_function_parameters(bootstrap_k_fold_cv_factor, optional_factor_dic)
                     best_factor_val, mean, std, cur_score_gain, (last_mean, last_std) = bootstrap_k_fold_cv_factor(
-                        model, data, factor_key, factor_values, get_next_elements, dict(best_factors),
-                        random_state=seed_dict[factor_key], **extra_factor_dic)
+                        model, data, factor_key, [fv for fv in factor_values if 'abc123' != fv], get_next_elements,
+                        dict(best_factors), random_state=seed_dict[factor_key], **extra_factor_dic)
 
                 if cur_score_gain > score_min_gain or not best_steady_trade_off:
                     best_factors[i] = factor_key, best_factor_val
